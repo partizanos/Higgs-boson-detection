@@ -187,56 +187,57 @@ def sigmoid(x):
     return 1.0 / (1 + np.exp(-x))
 
 
-def logit_loss(y, tx, w):
+def logit_loss(y, tx, w, lambda_=0):
     """Logistic log-likelihood."""
     proba = sigmoid(tx.dot(w))
-    loss = (-1/len(y))*(y.T.dot(np.log(proba)) +
-                        (1 - y).T.dot(np.log(1 - proba)))
+    loss = (-1/len(y))*(y.T.dot(np.log(proba)) + (1 - y).T.dot(np.log(1 - proba))) + 2*lambda_*np.linalg.norm(w)
 
     return loss
 
 
-def logit_gradient(y, tx, w):
+def logit_gradient(y, tx, w, lambda_=0):
     """Logistic log-likelihood gradient."""
     proba = sigmoid(tx.dot(w))
-    grad = tx.T.dot(proba - y)
+    grad = tx.T.dot(proba - y)+2*lambda_*w/np.linalg.norm(w)
 
     return (1/len(y))*grad
 
 
-def least_squares(y, tx):
+def least_squares(y, tx, lambda_=0):
     """OLS."""
 
-    return np.linalg.solve(tx.T.dot(tx), tx.T.dot(y))
+    return np.linalg.solve(tx.T.dot(tx)+2*lambda_*np.eye(len(y)), tx.T.dot(y))
 
 
-def logit_hessian(y, tx, w):
+def logit_hessian(y, tx, w, lambda_=0):
     """Logistic log-likelihood hessian."""
     proba = sigmoid(tx.dot(w))
     diag = np.multiply(proba, (1-proba))
     X_tilde = tx * diag.reshape((len(diag), 1))
+    t0=2*lambda_
+    t1=np.linalg.norm(w)
 
-    return (1/len(y))*tx.T.dot(X_tilde)
+    return (1/len(y))*(tx.T.dot(X_tilde)+t0/t1*np.eye(len(w))-t0/(t1**3)*np.kron(w,w).reshape(len(w),len(w)))
 
 
-def logistic_newton_descent(y, tx, w, max_iters, eps=1e-4, w_start_OLS=True):
+def logistic_newton_descent(y, tx, w, max_iters, lambda_=0, eps=1e-4, w_start_OLS=True):
     """Newton descent."""
     if w_start_OLS:
-        w = least_squares(y, tx)
-    grad = logit_gradient(y, tx, w)
-    hess = logit_hessian(y, tx, w)
+        w = least_squares(y, tx, lambda_)
+    grad = logit_gradient(y, tx, w, lambda_)
+    hess = logit_hessian(y, tx, w, lambda_)
     norm = np.linalg.norm(grad, np.inf)
     counter = 0
     while norm > eps:
         print(f"Gradient norm = {round(norm, 7)}                 \r", end="")
         counter += 1
-        grad = logit_gradient(y, tx, w)
-        hess = logit_hessian(y, tx, w)
+        grad = logit_gradient(y, tx, w, lambda_)
+        hess = logit_hessian(y, tx, w, lambda_)
         norm = np.linalg.norm(grad, np.inf)
 
         try:
             w1 = w - np.linalg.solve(hess, grad)
-            if np.linalg.norm(logit_gradient(y, tx, w1), np.inf) < norm:
+            if np.linalg.norm(logit_gradient(y, tx, w1, lambda_), np.inf) < norm:
                 w = w1
             else:
                 print(f"Maximum progress reached until divergence.                        ")
@@ -249,19 +250,19 @@ def logistic_newton_descent(y, tx, w, max_iters, eps=1e-4, w_start_OLS=True):
             print(f"max_iters reached.                        ")
             break
 
-    return logit_loss(y, tx, w), w, norm
+    return logit_loss(y, tx, w, lambda_), w, norm
 
 
-def logistic_gradient_descent(y, tx, w, max_iters, gamma, eps=1e-4, w_start_OLS=True):
+def logistic_gradient_descent(y, tx, w, max_iters, gamma, lambda_=0, eps=1e-4, w_start_OLS=True):
     """logistic gradient descent."""
     if w_start_OLS:
-        w = least_squares(y, tx)
-    grad = logit_gradient(y, tx, w)
+        w = least_squares(y, tx, lambda_)
+    grad = logit_gradient(y, tx, w, lambda_)
     norm = np.linalg.norm(grad, np.inf)
     counter = 0
     while norm > eps:
         counter += 1
-        grad = logit_gradient(y, tx, w)
+        grad = logit_gradient(y, tx, w, lambda_)
         w -= gamma * grad
         norm = np.linalg.norm(grad, np.inf)
         print(f"Gradient norm = {round(norm, 7)}                 \r", end="")
@@ -269,7 +270,7 @@ def logistic_gradient_descent(y, tx, w, max_iters, gamma, eps=1e-4, w_start_OLS=
             print(f"max_iters reached.                        ")
             break
 
-    return logit_loss(y, tx, w), w, norm
+    return logit_loss(y, tx, w, lambda_), w, norm
 
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
@@ -298,22 +299,22 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
 
-def logistic_stochastic_gradient_descent(y, tx, w, max_iters, gamma, batch_size=1, w_start_OLS=True):
+def logistic_stochastic_gradient_descent(y, tx, w, max_iters, gamma, lambda_=0, batch_size=1, w_start_OLS=True):
     """logistic stochastic gradient descent."""
     if w_start_OLS:
-        w = least_squares(y, tx)
-    grad = logit_gradient(y, tx, w)
+        w = least_squares(y, tx, lambda_)
+    grad = logit_gradient(y, tx, w, lambda_)
     norm = np.linalg.norm(grad, np.inf)
     counter = 0
     
     for y_batch, tx_batch in batch_iter(y, tx, batch_size=batch_size, num_batches=max_iters):
         counter += 1
-        grad = logit_gradient(y_batch, tx_batch, w)
+        grad = logit_gradient(y_batch, tx_batch, w, lambda_)
         w -= gamma * grad
         norm = np.linalg.norm(grad, np.inf)
         print(f"Progress : {round((counter/max_iters)*100, 2)}%                 \r", end="")
 
-    return logit_loss(y, tx, w), w, norm
+    return logit_loss(y, tx, w, lambda_), w, norm
 
 
 def choose(n, k):
