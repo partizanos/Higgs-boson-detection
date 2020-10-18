@@ -2,7 +2,9 @@
 
 import numpy as np
 from proj1_helpers import *
-from functions import *
+from data_processing import *
+
+from objective_functions import *
 
 def import_parameters(w_path, threshold_path, null_variance_index_path, mean_path, std_path, eigenvectors_path):
     """Importing relevant parameters for predictions."""
