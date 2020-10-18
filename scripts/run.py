@@ -101,3 +101,5 @@ predictions[zeros_index_test] = y_pred_zero
 predictions[one_index_test] = y_pred_one
 predictions[two_index_test] = y_pred_two
 predictions[three_index_test] = y_pred_three
+
+create_csv_submission(ids_test, predictions, "run_submission.csv")
