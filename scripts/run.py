@@ -4,33 +4,26 @@ import numpy as np
 from proj1_helpers import *
 from functions import *
 
-w_0 = np.genfromtxt("data/run/w_0.csv", delimiter=",", skip_header=1, dtype=np.complex128)
-thresh_0 = np.genfromtxt("data/run/thresh_0.csv", delimiter=",", skip_header=1)[0]
-null_var_index_zero = np.genfromtxt("data/run/null_var_index_zero.csv", delimiter=",", skip_header=1, dtype=int)
-mean_tx_zeros = np.genfromtxt("data/run/mean_tx_zeros.csv", delimiter=",", skip_header=1)
-std_tx_zeros = np.genfromtxt("data/run/std_tx_zeros.csv", delimiter=",", skip_header=1)
-tosolve_tx_zeros = np.genfromtxt("data/run/tosolve_tx_zeros.csv", delimiter=",", skip_header=1, dtype=np.complex128)
+def import_parameters(w_path, threshold_path, null_variance_index_path, mean_path, std_path, eigenvectors_path):
 
-w_1 = np.genfromtxt("data/run/w_1.csv", delimiter=",", skip_header=1, dtype=np.complex128)
-thresh_1 = np.genfromtxt("data/run/thresh_1.csv", delimiter=",", skip_header=1)[0]
-null_var_index_one = np.genfromtxt("data/run/null_var_index_one.csv", delimiter=",", skip_header=1, dtype=int)
-mean_tx_ones = np.genfromtxt("data/run/mean_tx_ones.csv", delimiter=",", skip_header=1)
-std_tx_ones = np.genfromtxt("data/run/std_tx_ones.csv", delimiter=",", skip_header=1)
-tosolve_tx_ones = np.genfromtxt("data/run/tosolve_tx_ones.csv", delimiter=",", skip_header=1, dtype=np.complex128)
+    w = np.genfromtxt(w_path, delimiter=",", skip_header=1, dtype=np.complex128)
+    thresh = np.genfromtxt(threshold_path, delimiter=",", skip_header=1)[0]
+    null_var_index = np.genfromtxt(null_variance_index_path, delimiter=",", skip_header=1, dtype=int)
+    mean_tx = np.genfromtxt(mean_path, delimiter=",", skip_header=1)
+    std_tx = np.genfromtxt(std_path, delimiter=",", skip_header=1)
+    tosolve_tx = np.genfromtxt(eigenvectors_path, delimiter=",", skip_header=1, dtype=np.complex128)
 
-w_2 = np.genfromtxt("data/run/w_2.csv", delimiter=",", skip_header=1, dtype=np.complex128)
-thresh_2 = np.genfromtxt("data/run/thresh_2.csv", delimiter=",", skip_header=1)[0]
-null_var_index_two = np.genfromtxt("data/run/null_var_index_two.csv", delimiter=",", skip_header=1, dtype=int)
-mean_tx_two = np.genfromtxt("data/run/mean_tx_two.csv", delimiter=",", skip_header=1)
-std_tx_two = np.genfromtxt("data/run/std_tx_two.csv", delimiter=",", skip_header=1)
-tosolve_tx_two = np.genfromtxt("data/run/tosolve_tx_two.csv", delimiter=",", skip_header=1, dtype=np.complex128)
+    return w, thresh, null_var_index, mean_tx, std_tx, tosolve_tx
 
-w_3 = np.genfromtxt("data/run/w_3.csv", delimiter=",", skip_header=1)
-thresh_3 = np.genfromtxt("data/run/thresh_3.csv", delimiter=",", skip_header=1)[0]
-null_var_index_three = np.genfromtxt("data/run/null_var_index_three.csv", delimiter=",", skip_header=1, dtype=int)
-mean_tx_three = np.genfromtxt("data/run/mean_tx_three.csv", delimiter=",", skip_header=1)
-std_tx_three = np.genfromtxt("data/run/std_tx_three.csv", delimiter=",", skip_header=1)
-tosolve_tx_three = np.genfromtxt("data/run/tosolve_tx_three.csv", delimiter=",", skip_header=1)
+
+print("Execution started")
+
+print("Importing parameters...")
+w_0, thresh_0, null_var_index_zero, mean_tx_zeros, std_tx_zeros, tosolve_tx_zeros = import_parameters("data/run/w_0.csv", "data/run/thresh_0.csv", "data/run/null_var_index_zero.csv", "data/run/mean_tx_zeros.csv", "data/run/std_tx_zeros.csv","data/run/tosolve_tx_zeros.csv")
+w_1, thresh_1, null_var_index_one, mean_tx_ones, std_tx_ones, tosolve_tx_ones =import_parameters("data/run/w_1.csv", "data/run/thresh_1.csv", "data/run/null_var_index_one.csv", "data/run/mean_tx_ones.csv", "data/run/std_tx_ones.csv","data/run/tosolve_tx_ones.csv")
+w_2, thresh_2, null_var_index_two, mean_tx_two, std_tx_two, tosolve_tx_two = import_parameters("data/run/w_2.csv", "data/run/thresh_2.csv", "data/run/null_var_index_two.csv", "data/run/mean_tx_two.csv", "data/run/std_tx_two.csv","data/run/tosolve_tx_two.csv")
+w_3, thresh_3, null_var_index_three, mean_tx_three, std_tx_three, tosolve_tx_three = import_parameters("data/run/w_3.csv", "data/run/thresh_3.csv", "data/run/null_var_index_three.csv", "data/run/mean_tx_three.csv", "data/run/std_tx_three.csv","data/run/tosolve_tx_three.csv")
+##Explain what are the parameters and what is the output, the time it takes to create the model
 
 
 _, tX_test, ids_test = load_csv_data("data/test.csv")
