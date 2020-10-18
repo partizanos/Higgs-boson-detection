@@ -1,8 +1,48 @@
 import numpy as np
 
 
+def riemann_approximation_gaussian_cdf(b, N=100000):
+    """Riemann approximation of gaussian distribution."""
+    inte = 0
+    a = -50
+    for i in range(N):
+        x = a+(b-a)*i/N
+        inte += (np.exp(-x**2/2)*(b-a)/N)/np.sqrt(2*np.pi)
+    return inte
+
+
+def gaussian_test(y, feature):
+    """Statistical test to quantify feature importance."""
+    boson_index = np.where(y == 1)[0]
+
+    boson_feature = feature[boson_index]
+    negative_feature = feature[~boson_index]
+
+    boson_mean = np.mean(boson_feature)
+    negative_mean = np.mean(negative_feature)
+
+    boson_var = (1/len(boson_feature))*np.var(boson_feature)
+    negative_var = (1/len(negative_feature))*np.var(negative_feature)
+
+    t_var = boson_var + negative_var
+    t_mean = boson_mean - negative_mean
+    test = t_mean/np.sqrt(t_var)
+
+    # Under H0, test ~ N(0,1)
+    return 2*(1-riemann_approximation_gaussian_cdf(abs(test)))
+
+
+def most_important_features_index(y, x, max_features=8):
+    """Returns an index of features by importance up to max_features."""
+    x = x[:, ~is_cat(x)]
+    p_values = list()
+    for i in range(x.shape[1]):
+        p_values.append(gaussian_test(y, x[:, i]))
+    return np.argsort(np.array(p_values))[:max_features]
+
+
 def is_cat(x, max_categories=10):
-    """Check if an array is categorical"""
+    """Check if an array is categorical."""
     if sum(sum(np.isnan(x))):
         raise ValueError('Missing values (np.nan) not allowed.')
     boolean_index = list([])
@@ -37,19 +77,27 @@ def rearrange_continuous_categorical_features(x, max_categories=10):
 
 def gaussian_scaling(x, max_categories=10):
     """Scaling data by subtracting the mean and dividing by the standard deviation."""
+    # For loops are used because of lack of memory for huge datasets.
+
     # Identifying continuous and discrete features.
     cat_index = is_cat(x, max_categories)
     categorical_variables = x[:, cat_index]
     continuous_variables = x[:, ~cat_index]
 
     # Scale only continuous features.
-    mean_ = np.mean(continuous_variables, axis=0)
-    continuous_variables_scaled = continuous_variables - mean_
-    std_ = np.std(continuous_variables, axis=0)
-    continuous_variables_scaled = continuous_variables_scaled / std_
+    mean_ = list()
+    std_ = list()
+    for i in range(continuous_variables.shape[1]):
+        a = np.mean(continuous_variables[:, i], axis=0)
+        b = np.std(continuous_variables[:, i], axis=0)
+        mean_.append(a)
+        std_.append(b)
+        continuous_variables[:, i] = (continuous_variables[:, i] - a) / b
 
     # Setting categorical means and std to 0 and 1.
-    x_scaled = np.c_[continuous_variables_scaled, categorical_variables]
+    mean_ = np.array(mean_)
+    std_ = np.array(std_)
+    x_scaled = np.c_[continuous_variables, categorical_variables]
     mean_ = np.concatenate((mean_, np.zeros(sum(cat_index*1))))
     std_ = np.concatenate((std_, np.ones(sum(cat_index*1))))
 
@@ -73,7 +121,7 @@ def row_na_omit(y, x):
     return y_no_na, x_no_na
 
 
-def remove_outliers(y, x, quantile=3):
+def remove_outliers(y, x, quantile=1.96):
     """Delete all rows of a dataset having at least one value outside their respective feature confidence interval (CI).
        CI is symmetric and computed based on Gaussian assumption. Can be used on the training set, but not on the test set."""
     _, clean_data = row_na_omit(y, x)
@@ -190,7 +238,8 @@ def sigmoid(x):
 def logit_loss(y, tx, w, lambda_=0):
     """Logistic log-likelihood."""
     proba = sigmoid(tx.dot(w))
-    loss = (-1/len(y))*(y.T.dot(np.log(proba)) + (1 - y).T.dot(np.log(1 - proba))) + 2*lambda_*np.linalg.norm(w)
+    loss = (-1/len(y))*(y.T.dot(np.log(proba)) +
+                        (1 - y).T.dot(np.log(1 - proba))) + 2*lambda_*np.linalg.norm(w)
 
     return loss
 
@@ -198,15 +247,15 @@ def logit_loss(y, tx, w, lambda_=0):
 def logit_gradient(y, tx, w, lambda_=0):
     """Logistic log-likelihood gradient."""
     proba = sigmoid(tx.dot(w))
-    grad = tx.T.dot(proba - y)+2*lambda_*w/np.linalg.norm(w)
+    grad = (1/len(y))*tx.T.dot(proba - y) + 2*lambda_*w # /np.linalg.norm(w)
 
-    return (1/len(y))*grad
+    return grad
 
 
 def least_squares(y, tx, lambda_=0):
     """OLS."""
 
-    return np.linalg.solve(tx.T.dot(tx)+2*lambda_*np.eye(len(y)), tx.T.dot(y))
+    return np.linalg.solve(tx.T.dot(tx)+2*lambda_*np.eye(tx.shape[1]), tx.T.dot(y))
 
 
 def logit_hessian(y, tx, w, lambda_=0):
@@ -214,16 +263,20 @@ def logit_hessian(y, tx, w, lambda_=0):
     proba = sigmoid(tx.dot(w))
     diag = np.multiply(proba, (1-proba))
     X_tilde = tx * diag.reshape((len(diag), 1))
-    t0=2*lambda_
-    t1=np.linalg.norm(w)
+    # t0 = 2*lambda_
+    # t1 = np.linalg.norm(w)
 
-    return (1/len(y))*(tx.T.dot(X_tilde)+t0/t1*np.eye(len(w))-t0/(t1**3)*np.kron(w,w).reshape(len(w),len(w)))
+    return (1/len(y))*(tx.T.dot(X_tilde)) + 2 * lambda_ * np.eye(tx.shape[1])# +t0/t1*np.eye(len(w))-t0/(t1**3)*np.kron(w, w).reshape(len(w), len(w))
 
 
-def logistic_newton_descent(y, tx, w, max_iters, lambda_=0, eps=1e-4, w_start_OLS=True):
+def logistic_newton_descent(y, tx, w, max_iters, lambda_=0, eps=1e-4, w_start_OLS=False):
     """Newton descent."""
     if w_start_OLS:
-        w = least_squares(y, tx, lambda_)
+        try:
+            w = least_squares(y, tx, lambda_)
+        except:
+            w = np.zeros(tx.shape[1])
+
     grad = logit_gradient(y, tx, w, lambda_)
     hess = logit_hessian(y, tx, w, lambda_)
     norm = np.linalg.norm(grad, np.inf)
@@ -240,20 +293,20 @@ def logistic_newton_descent(y, tx, w, max_iters, lambda_=0, eps=1e-4, w_start_OL
             if np.linalg.norm(logit_gradient(y, tx, w1, lambda_), np.inf) < norm:
                 w = w1
             else:
-                print(f"Maximum progress reached until divergence.                        ")
+                #print(f"Maximum progress reached until divergence.                        ")
                 break
         except:
-            print(f"Singular Hessian.                        ")
+            #print(f"Singular Hessian.                        ")
             break
 
         if counter == max_iters:
-            print(f"max_iters reached.                        ")
+            #print(f"max_iters reached.                        ")
             break
 
     return logit_loss(y, tx, w, lambda_), w, norm
 
 
-def logistic_gradient_descent(y, tx, w, max_iters, gamma, lambda_=0, eps=1e-4, w_start_OLS=True):
+def logistic_gradient_descent(y, tx, w, max_iters, gamma, lambda_=0, eps=1e-4, w_start_OLS=False):
     """logistic gradient descent."""
     if w_start_OLS:
         w = least_squares(y, tx, lambda_)
@@ -267,7 +320,7 @@ def logistic_gradient_descent(y, tx, w, max_iters, gamma, lambda_=0, eps=1e-4, w
         norm = np.linalg.norm(grad, np.inf)
         print(f"Gradient norm = {round(norm, 7)}                 \r", end="")
         if counter == max_iters:
-            print(f"max_iters reached.                        ")
+            #print(f"max_iters reached.                        ")
             break
 
     return logit_loss(y, tx, w, lambda_), w, norm
@@ -306,13 +359,14 @@ def logistic_stochastic_gradient_descent(y, tx, w, max_iters, gamma, lambda_=0, 
     grad = logit_gradient(y, tx, w, lambda_)
     norm = np.linalg.norm(grad, np.inf)
     counter = 0
-    
+
     for y_batch, tx_batch in batch_iter(y, tx, batch_size=batch_size, num_batches=max_iters):
         counter += 1
         grad = logit_gradient(y_batch, tx_batch, w, lambda_)
         w -= gamma * grad
         norm = np.linalg.norm(grad, np.inf)
-        print(f"Progress : {round((counter/max_iters)*100, 2)}%                 \r", end="")
+        print(
+            f"Progress : {round((counter/max_iters)*100, 2)}%                 \r", end="")
 
     return logit_loss(y, tx, w, lambda_), w, norm
 
@@ -322,8 +376,12 @@ def choose(n, k):
     return int(np.math.factorial(n)/(np.math.factorial(k)*np.math.factorial(n-k)))
 
 
-def build_poly(x, degree, pairwise_interaction=True, intercept=False, max_categories=10):
-    """Build polynomial basis augmentation, pairwise interactions and an intercept."""
+def build_poly(x, degree, max_categories=10):
+    """Polynomial basis augmentation on continuous features.
+
+       - Ignoring the 0-monomial term, i.e use add_bias() function.
+       - The 1-monomial term is equivalent to copy the original data. Hence, degree > 1."""
+
     # Identifying continuous and discrete features.
     cat_index = is_cat(x, max_categories)
     categorical_variables = x[:, cat_index]
@@ -331,34 +389,151 @@ def build_poly(x, degree, pairwise_interaction=True, intercept=False, max_catego
 
     # Doing simple polynomial basis augmentation only on continuous features.
     augmented_x = continuous_variables
+    dim2 = degree-1
     if degree > 1:
-        for i in range(2, degree+1):
+        for j, i in enumerate(range(2, degree+1)):
             augmented_x = np.c_[augmented_x, np.power(continuous_variables, i)]
+            print(
+                f"Polynomial augmentation progress : {round(((j+1)/dim2)*100, 2)}%                 \r", end="")
+
+    return np.c_[augmented_x, categorical_variables]
+
+
+def pairwise_interaction(x, max_categories=10):
+    """Pairwise interactions/product between continuous variables."""
+    # Identifying continuous and discrete features.
+    cat_index = is_cat(x, max_categories)
+    categorical_variables = x[:, cat_index]
+    continuous_variables = x[:, ~cat_index]
+
+    augmented_x = continuous_variables
+    dim2 = continuous_variables.shape[1]
+    for j in range(dim2):
+        augmented_x = np.c_[augmented_x, continuous_variables[:, j].reshape(
+            (continuous_variables.shape[0], 1)) * continuous_variables[:, j+1:]]
+        print(
+            f"Pairwise interaction progress : {round(((j+1)/dim2)*100, 2)}%                 \r", end="")
+
+    return np.c_[augmented_x, categorical_variables]
+
+
+def trigonometric_augmentation(x, max_categories=10):
+    """Cos/sin augmentation for continuous variables."""
+    # Identifying continuous and discrete features.
+    cat_index = is_cat(x, max_categories)
+    categorical_variables = x[:, cat_index]
+    continuous_variables = x[:, ~cat_index]
+
+    augmented_x = continuous_variables
+    augmented_x = np.c_[augmented_x, np.cos(
+        continuous_variables), np.sin(continuous_variables)]
+    print(f"Trigonometric augmentation : ✔                 \r", end="")
+
+    return np.c_[augmented_x, categorical_variables]
+
+
+def logabs1_augmentation(x, max_categories=10):
+    # Identifying continuous and discrete features.
+    cat_index = is_cat(x, max_categories)
+    categorical_variables = x[:, cat_index]
+    continuous_variables = x[:, ~cat_index]
+
+    augmented_x = continuous_variables
+    augmented_x = np.c_[augmented_x, np.log(
+        np.abs(continuous_variables)+1)]
+    print(f"logabs1 augmentation : ✔                 \r", end="")
+
+    return np.c_[augmented_x, categorical_variables]
+
+
+def exp_augmentation(x, max_categories=10):
+    # Identifying continuous and discrete features.
+    cat_index = is_cat(x, max_categories)
+    categorical_variables = x[:, cat_index]
+    continuous_variables = x[:, ~cat_index]
+
+    augmented_x = continuous_variables
+    augmented_x = np.c_[augmented_x, np.exp(continuous_variables)]
+    print(f"exp augmentation : ✔                 \r", end="")
+
+    return np.c_[augmented_x, categorical_variables]
+
+
+def add_bias(x):
+    """Adding a bias/intercept to a data matrix."""
+    res = np.c_[np.ones((x.shape[0], 1)), x]
+    print(f"Bias : ✔                                  \r", end="")
+    return res
+
+
+def process_data(x, degree=0, bias=False, pairwise=False, trigonometric_functions=False, logabs1=False, exp=False, create_dummies=False, max_categories=10):
+    """Polynomial basis augmentation, pairwise interactions, trigonometric transformations,
+       log/exp transformations and categorical variable to dummy variables."""
+
+    # Identifying continuous and discrete features.
+    cat_index = is_cat(x, max_categories)
+    categorical_variables = x[:, cat_index]
+    continuous_variables = x[:, ~cat_index]
+
+    # Storing the shape of continuous_variables to avoid repeating terms.
+    dim1, dim2 = continuous_variables.shape
+
+    if degree > 1:
+        print("")
+        poly = build_poly(continuous_variables, degree)[:, dim2:]
+    else:
+        poly = np.zeros((dim1, 1))
 
     # Doing pairwise product only on continuous features.
-    if pairwise_interaction:
-        nb_dim = continuous_variables.shape[1]
-        # Number of interactions to follow progress.
-        nb_pairs = choose(nb_dim, 2)
-        counter = 0
-        for j in range(nb_dim):
-            for k in range(nb_dim):
-                if j >= k:
-                    continue  # Ensure uniqueness of product.
-                else:
-                    augmented_x = np.c_[augmented_x, np.multiply(
-                        continuous_variables[:, j], continuous_variables[:, k])]
-                    counter += 1
-                    print(
-                        f"Progress : {round((counter/nb_pairs)*100, 2)}%                 \r", end="")
+    if pairwise:
+        print("")
+        inter = pairwise_interaction(continuous_variables)[:, dim2:]
+    else:
+        inter = np.zeros((dim1, 1))
 
-    # Adding an intercept.
-    if intercept:
-        inter = np.ones((x.shape[0], 1))
-        augmented_x = np.c_[np.ones((x.shape[0], 1)), augmented_x]
+    # Adding trigonometric transformations.
+    if trigonometric_functions:
+        print("")
+        trigo = trigonometric_augmentation(continuous_variables)[:, dim2:]
+    else:
+        trigo = np.zeros((dim1, 1))
 
-    # Adding categorical variables.
-    augmented_x = np.c_[augmented_x, categorical_variables]
+    # Adding logarithm of absolute values.
+    if logabs1:
+        print("")
+        ln = logabs1_augmentation(continuous_variables)[:, dim2:]
+    else:
+        ln = np.zeros((dim1, 1))
+
+    # Adding exponential transformations.
+    if exp:
+        print("")
+        ex = exp_augmentation(continuous_variables)[:, dim2:]
+    else:
+        ex = np.zeros((dim1, 1))
+
+    # Deleting constant variables, i.e. either useless or artificially created when if condition was not satisfied.
+    augmented_x = np.c_[continuous_variables, poly, inter, trigo, ln, ex]
+    null_var_index = np.where(np.std(augmented_x, axis=0) == 0)[0]
+    augmented_x = np.delete(augmented_x, null_var_index, axis=1)
+
+    # Adding categorical variables as dummy variables.
+    if create_dummies:
+        print("")
+        dim2 = categorical_variables.shape[1]
+        for j in range(dim2):
+            unique = list(set(np.squeeze(categorical_variables[:, j])))
+            result = [i == unique for i in np.squeeze(
+                categorical_variables[:, j])]
+            augmented_x = np.c_[augmented_x, np.squeeze(result)*1]
+            print(
+                f"Dummy variables progress : {round(((j+1)/dim2)*100, 2)}%                 \r", end="")
+    else:
+        augmented_x = np.c_[augmented_x, categorical_variables]
+
+    if bias:
+        print("")
+        augmented_x = add_bias(augmented_x)
 
     return augmented_x
 
@@ -374,20 +549,139 @@ def threshold(y, fitted_probabilities, step=0.01):
         thresholds.append(i)
         accuracies.append(accuracy)
     index = accuracies.index(max(accuracies))
+
     return thresholds[index]
 
 
-def eigen(train, var=99.99999999):
+def eigen(x, var=100):
     """Eigen-decomposition for a minimum variance explained (%).
        Returns the basis-changed matrix and retained eigenvectors for further
        transformation."""
-    A = np.cov(train, rowvar=False)
+    A = np.cov(x, rowvar=False)
     eigenValues, eigenVectors = np.linalg.eig(A)
     idx = np.argsort(-eigenValues)
     eigenValues = eigenValues[idx]
     eigenVectors = eigenVectors[:, idx]
-    candidates = (np.cumsum(eigenValues)/np.sum(eigenValues))
-    index = np.where(candidates >= (var/100))[0][0]
-    sub_linear_space = eigenVectors.real[:, :(index+1)]
-    train = train.dot(sub_linear_space)
-    return train, sub_linear_space
+    if var == 100:
+        sub_linear_space = eigenVectors.real
+        x = x.dot(sub_linear_space)
+    else:
+        candidates = (np.cumsum(eigenValues)/np.sum(eigenValues))
+        index = np.where(candidates >= (var/100))[0][0]
+        sub_linear_space = eigenVectors.real[:, :(index+1)]
+        x = x.dot(sub_linear_space)
+
+    return x, sub_linear_space
+
+
+def orthogonal_basis(x):
+    """Orthogonal change of basis."""
+    cov = np.cov(x, rowvar=False)
+    eigenvalues, eigenvectors = np.linalg.eig(cov)
+    x_orth = np.linalg.solve(eigenvectors, x.T).T
+
+    return x_orth, eigenvectors
+
+
+def bootstrap_validation(y, x, repeats=10, splitting_ratio=0.8, start_OLS=True, lambda_=0):
+    """Returns bootstrap validation accuracies."""
+    Accuracies = list()
+    random_seeds = np.random.randint(1, 999, repeats)
+
+    for counter, bootstrap in enumerate(random_seeds):
+        x_train, x_validation, y_train, y_validation = split_data(
+            y, x, splitting_ratio, seed=bootstrap)
+        newton_loss, w, newton_grad_norm = logistic_newton_descent(y_train,
+                                                                   x_train,
+                                                                   w=np.zeros(
+                                                                       x_train.shape[1]),
+                                                                   lambda_=lambda_,
+                                                                   max_iters=100,
+                                                                   eps=1e-6,
+                                                                   w_start_OLS=start_OLS)
+        GD_loss, w, GD_grad_norm = logistic_gradient_descent(y_train,
+                                                             x_train,
+                                                             w=w,
+                                                             max_iters=1000,
+                                                             lambda_=lambda_,
+                                                             gamma=0.05,
+                                                             eps=1e-4,
+                                                             w_start_OLS=False)
+
+        thresh = threshold(y_train, sigmoid(x_train@w))
+        pred = (sigmoid(x_validation@w) > thresh)*1
+        accuracy = 1 - sum(np.abs(pred - y_validation))/len(y_validation)
+
+        print(
+            f"Bootstrap {counter+1}/{len(random_seeds)} --- seed : {bootstrap} --- Validation accuracy : {round(accuracy*100,3)}%")
+
+        Accuracies.append(accuracy)
+
+    mean_ = np.mean(Accuracies)
+    median_ = np.median(Accuracies)
+    std_ = np.std(Accuracies)
+    print("\n", "\n", f"Mean validation accuracy = {mean_}", "\n",
+          f"Median validation accuracy = {median_}", "\n", f"Std validation accuracy = {std_}")
+    return np.array(Accuracies), mean_, median_, std_, random_seeds
+
+
+def cross_validation(y, x, k_fold, seed=42, lambda_=0, start_OLS=True):
+    """Returns k-fold cross validation validation accuracies."""
+    # Creating k_indices
+    num_row = y.shape[0]
+    interval = int(num_row / k_fold)
+    np.random.seed(seed)
+    indices = np.random.permutation(num_row)
+    k_indices = [indices[k * interval: (k + 1) * interval]
+                 for k in range(k_fold)]
+    k_indices = np.array(k_indices)
+
+    # Store accuracies
+    Accuracies = list()
+
+    # Compute CV
+    for j in range(k_indices.shape[0]):
+        # 1
+        train_ind = np.squeeze(
+            k_indices[~(np.arange(k_indices.shape[0]) == j)]).reshape(-k_fold+1)
+        test_ind = k_indices[j]
+
+        # 2
+        x_test = x[test_ind, :]
+        y_test = y[test_ind]
+        x_train = x[train_ind, :]
+        y_train = y[train_ind]
+
+        newton_loss, w, newton_grad_norm = logistic_newton_descent(y_train,
+                                                                   x_train,
+                                                                   w=np.zeros(
+                                                                       x_train.shape[1]),
+                                                                   lambda_=lambda_,
+                                                                   max_iters=1000,
+                                                                   eps=1e-10,
+                                                                   w_start_OLS=start_OLS)
+        GD_loss, w, GD_grad_norm = logistic_gradient_descent(y_train,
+                                                             x_train,
+                                                             w=w,
+                                                             max_iters=1000,
+                                                             lambda_=lambda_,
+                                                             gamma=0.05,
+                                                             eps=1e-4,
+                                                             w_start_OLS=False)
+
+        thresh = threshold(y_train, sigmoid(x_train@w))
+        pred = (sigmoid(x_test@w) > thresh)*1
+        accuracy = 1 - sum(np.abs(pred - y_test))/len(y_test)
+
+        print(
+            f"CV {j+1}/{k_fold} --- Validation accuracy : {round(accuracy*100,3)}%")
+
+        Accuracies.append(accuracy)
+
+    mean_ = np.mean(Accuracies)
+    median_ = np.median(Accuracies)
+    std_ = np.std(Accuracies)
+    print("\n", "\n", f"Mean validation accuracy = {mean_}", "\n",
+          f"Median validation accuracy = {median_}", "\n", f"Std validation accuracy = {std_}")
+
+    return np.array(Accuracies), mean_, median_, std_
