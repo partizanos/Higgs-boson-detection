@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def is_cat(x, max_categories=10):
     """Check if an array is categorical."""
     if sum(sum(np.isnan(x))):
@@ -20,6 +21,7 @@ def is_cat(x, max_categories=10):
             boolean_index.append(boolean)
     return np.array(boolean_index)
 
+
 def rearrange_continuous_categorical_features(x, max_categories=10):
     """Rearranging features such that continuous variable are separated from categorical variables."""
     # Identifying continuous and discrete features.
@@ -31,6 +33,7 @@ def rearrange_continuous_categorical_features(x, max_categories=10):
     x = np.c_[continuous_variables, categorical_variables]
 
     return x
+
 
 def gaussian_scaling(x, max_categories=10):
     """Scaling data by subtracting the mean and dividing by the standard deviation."""
@@ -60,12 +63,14 @@ def gaussian_scaling(x, max_categories=10):
 
     return x_scaled, mean_, std_
 
+
 def col_na_omit(x, tol=1):
     """Delete columns of a dataset with a higher proportion of missing values than tol. 0⩽tol⩽1."""
     index = sum(np.isnan(x))/(x.shape[0]) > tol
     x = x[:, ~index]
 
     return x
+
 
 def row_na_omit(y, x):
     """Delete all rows of a dataset containing at least one missing value."""
@@ -74,6 +79,7 @@ def row_na_omit(y, x):
     y_no_na = y[~index]
 
     return y_no_na, x_no_na
+
 
 def remove_outliers(y, x, quantile=1.96):
     """Delete all rows of a dataset having at least one value outside their respective feature confidence interval (CI).
@@ -102,13 +108,6 @@ def remove_outliers(y, x, quantile=1.96):
 
     return y, x
 
-def skewness(x):
-    """Compute the skewness of all features."""
-    mean_x = np.mean(x, axis=0)
-    std_x = np.std(x, axis=0)
-    skew = np.mean(((x - mean_x)/std_x)**3, axis=0)
-
-    return skew
 
 def split_data(y, x, ratio, seed=1):
     """split the dataset based on the split ratio."""
@@ -125,10 +124,12 @@ def split_data(y, x, ratio, seed=1):
 
     return x_train, x_validation, y_train, y_validation
 
+
 def pairwise(p, q):
     """Computing pairwise Euclidean distances. Used for stochastic nearest neighbor imputation."""
 
     return np.sqrt(np.sum((p[:, np.newaxis, :]-q[np.newaxis, :, :])**2, axis=2))
+
 
 def random_sample(x, length):
     """Returns a random sample of x for a given length. No seed involved."""
@@ -137,6 +138,7 @@ def random_sample(x, length):
     sample = x[indices][:length]
 
     return sample
+
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     """
@@ -163,9 +165,11 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         if start_index != end_index:
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
+
 def choose(n, k):
     """Binomial coefficient."""
     return int(np.math.factorial(n)/(np.math.factorial(k)*np.math.factorial(n-k)))
+
 
 def threshold(y, fitted_probabilities, step=0.01):
     """find the best threshold for classification"""

@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def riemann_approximation_gaussian_cdf(b, N=100000):
     """Riemann approximation of gaussian distribution."""
     inte = 0
@@ -8,6 +9,7 @@ def riemann_approximation_gaussian_cdf(b, N=100000):
         x = a+(b-a)*i/N
         inte += (np.exp(-x**2/2)*(b-a)/N)/np.sqrt(2*np.pi)
     return inte
+
 
 def gaussian_test(y, feature):
     """Statistical test to quantify feature importance."""
@@ -28,3 +30,12 @@ def gaussian_test(y, feature):
 
     # Under H0, test ~ N(0,1)
     return 2*(1-riemann_approximation_gaussian_cdf(abs(test)))
+
+
+def skewness(x):
+    """Compute the skewness of all features."""
+    mean_x = np.mean(x, axis=0)
+    std_x = np.std(x, axis=0)
+    skew = np.mean(((x - mean_x)/std_x)**3, axis=0)
+
+    return skew

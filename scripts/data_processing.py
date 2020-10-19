@@ -2,6 +2,7 @@ import numpy as np
 
 from extra_helpers import *
 
+
 def build_poly(x, degree, max_categories=10):
     """Polynomial basis augmentation on continuous features.
 
@@ -24,6 +25,7 @@ def build_poly(x, degree, max_categories=10):
 
     return np.c_[augmented_x, categorical_variables]
 
+
 def mean_imputation(na_data):
     """Imputing missing values based on feature means."""
     _, clean_data = row_na_omit(np.zeros((na_data.shape[0], 1)), na_data)
@@ -33,6 +35,7 @@ def mean_imputation(na_data):
 
     return na_data
 
+
 def median_imputation(na_data):
     """Imputing missing values based on feature medians."""
     _, clean_data = row_na_omit(np.zeros((na_data.shape[0], 1)), na_data)
@@ -41,6 +44,7 @@ def median_imputation(na_data):
         na_data[:, i] = np.nan_to_num(na_data[:, i], nan=median[i])
 
     return na_data
+
 
 def stochastic_nearest_neighbor_imputation(na_data, neighbors=10, length=100):
     """Imputing missing values based on means off k nearest neighbors."""
@@ -79,6 +83,7 @@ def pairwise_interaction(x, max_categories=10):
 
     return np.c_[augmented_x, categorical_variables]
 
+
 def trigonometric_augmentation(x, max_categories=10):
     """Cos/sin augmentation for continuous variables."""
     # Identifying continuous and discrete features.
@@ -107,6 +112,7 @@ def logabs1_augmentation(x, max_categories=10):
 
     return np.c_[augmented_x, categorical_variables]
 
+
 def exp_augmentation(x, max_categories=10):
     # Identifying continuous and discrete features.
     cat_index = is_cat(x, max_categories)
@@ -119,11 +125,13 @@ def exp_augmentation(x, max_categories=10):
 
     return np.c_[augmented_x, categorical_variables]
 
+
 def add_bias(x):
     """Adding a bias/intercept to a data matrix."""
     res = np.c_[np.ones((x.shape[0], 1)), x]
     print(f"Bias : ✔                                  \r", end="")
     return res
+
 
 def process_data(x, degree=0, bias=False, pairwise=False, trigonometric_functions=False, logabs1=False, exp=False, create_dummies=False, max_categories=10):
     """Polynomial basis augmentation, pairwise interactions, trigonometric transformations,
@@ -196,6 +204,7 @@ def process_data(x, degree=0, bias=False, pairwise=False, trigonometric_function
 
     return augmented_x
 
+
 def orthogonal_basis(x):
     """Orthogonal change of basis."""
     cov = np.cov(x, rowvar=False)
@@ -203,4 +212,3 @@ def orthogonal_basis(x):
     x_orth = np.linalg.solve(eigenvectors, x.T).T
 
     return x_orth, eigenvectors
-
