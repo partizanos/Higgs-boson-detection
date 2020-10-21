@@ -149,7 +149,7 @@ def logistic_newton_descent(y, tx, w, max_iters, lambda_=0, eps=1e-4, w_start_OL
     return logit_loss(y, tx, w, lambda_), w, norm
 
 
-def cross_validation(y, x, k_fold, seed=42, lambda_=0, start_OLS=True, t_opt=False):
+def cross_validation(y, x, k_fold, seed=42, lambda_=0, start_OLS=True, t_opt=True):
     """Returns k-fold cross validation validation accuracies."""
     # Creating k_indices
     num_row = y.shape[0]
