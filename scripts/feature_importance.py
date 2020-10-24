@@ -39,3 +39,11 @@ def skewness(x):
     skew = np.mean(((x - mean_x)/std_x)**3, axis=0)
 
     return skew
+
+def significant_features(y, x, alpha=0.5):
+    output = list()
+    for i in range(x.shape[1]):
+        output.append(gaussian_test(y,x[:,i]))
+    output = (np.array(output)<alpha)*1
+    
+    return output
