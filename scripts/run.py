@@ -25,7 +25,8 @@ from objective_functions import *
 #    - std_tx_i : vector of standard deviations of features for the model i.
 #    - tosolve_tx_i : matrix of eigenvectors of features for the model i.
 
-# These parameters define our trained model.
+# These parameters are obtained using the "Modeling.ipynb" file and defines our trained models.
+# They are loaded such that the execution of this file is faster.
 
 print("Importing parameters of trained models...")
 

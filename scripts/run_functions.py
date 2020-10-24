@@ -5,12 +5,12 @@ from objective_functions import *
 
 def import_parameters(w_path, threshold_path, null_variance_index_path, mean_path, std_path, eigenvectors_path):
     """Importing relevant parameters for predictions."""
-    w = np.genfromtxt(w_path, delimiter=",", skip_header=1, dtype=np.complex128)
-    thresh = np.genfromtxt(threshold_path, delimiter=",", skip_header=1)[0]
-    null_var_index = np.genfromtxt(null_variance_index_path, delimiter=",", skip_header=1, dtype=int)
-    mean_tx = np.genfromtxt(mean_path, delimiter=",", skip_header=1)
-    std_tx = np.genfromtxt(std_path, delimiter=",", skip_header=1)
-    tosolve_tx = np.genfromtxt(eigenvectors_path, delimiter=",", skip_header=1, dtype=np.complex128)
+    w = np.genfromtxt(w_path, delimiter=",", skip_header=0, dtype=np.complex128)
+    thresh = np.genfromtxt(threshold_path, delimiter=",", skip_header=0)[0]
+    null_var_index = np.genfromtxt(null_variance_index_path, delimiter=",", skip_header=0, dtype=int)
+    mean_tx = np.genfromtxt(mean_path, delimiter=",", skip_header=0)
+    std_tx = np.genfromtxt(std_path, delimiter=",", skip_header=0)
+    tosolve_tx = np.genfromtxt(eigenvectors_path, delimiter=",", skip_header=0, dtype=np.complex128)
 
     return w, thresh, null_var_index, mean_tx, std_tx, tosolve_tx
 

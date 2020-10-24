@@ -95,7 +95,7 @@ def logistic_gradient_descent(y, tx, w, max_iters, gamma, lambda_=0, eps=1e-4, w
             #print(f"max_iters reached.                        ")
             break
 
-    return logit_loss(y, tx, w, lambda_), w, norm
+    return logit_loss(y, tx, w), w, norm
 
 
 def logistic_stochastic_gradient_descent(y, tx, w, max_iters, gamma, lambda_=0, batch_size=1, w_start_OLS=True):
@@ -118,7 +118,7 @@ def logistic_stochastic_gradient_descent(y, tx, w, max_iters, gamma, lambda_=0, 
         print(
             f"Progress : {round((counter/max_iters)*100, 2)}%                 \r", end="")
 
-    return logit_loss(y, tx, w, lambda_), w, norm
+    return logit_loss(y, tx, w), w, norm
 
 
 def logistic_newton_descent(y, tx, w, max_iters, lambda_=0, eps=1e-4, w_start_OLS=False):
@@ -155,7 +155,7 @@ def logistic_newton_descent(y, tx, w, max_iters, lambda_=0, eps=1e-4, w_start_OL
             #print(f"max_iters reached.                        ")
             break
 
-    return logit_loss(y, tx, w, lambda_), w, norm
+    return logit_loss(y, tx, w), w, norm
 
 
 def cross_validation(y, x, k_fold, seed=42, lambda_=0, start_OLS=True, t_opt=True):
