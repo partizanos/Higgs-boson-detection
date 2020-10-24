@@ -3,43 +3,33 @@ import numpy as np
 from objective_functions import *
 from extra_helpers import *
 
-def least_squares_GD(y, tx, initial_w, max_iter, gamma):
+def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """Calculate the loss and the w vector produced by the gradient descent algorithm"""
     w = initial_w
-    n = len(y)
-    for n_iter in range(max_iter): 
+    
+    for n_iter in range(max_iters): 
+        
         gradient = compute_gradient(y, tx, w)
-
         w = w - gamma*gradient 
-        txw = tx.dot(w)
-
-        loss = np.sum(np.square(txw-y))/n
-        print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
-              bi=n_iter, ti=max_iter - 1, l=loss, w0=w[0], w1=w[1]))
+  
+    loss = compute_mse_loss(y,tx,w)
     return loss, w
 
 
-def least_squares_SGD(y, tx, initial_w, max_iter, gamma):
+def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
+    """Calculate the loss and the w vector produced by the stochastic gradient descent algorithm"""
     w = initial_w
     n = len(y)
-    for n_iter in range(max_iter):
-        entry_num = np.random.randint(n)
-        y_entry = y[entry_num]
-        tx_entry = tx[entry_num]
+    for y_batch, tx_batch in batch_iter(y, tx, batch_size=1, num_batches=max_iters):
         
-        gradient = compute_stochastic_gradient(y_entry, tx_entry, w)
-
-        w = w - gamma*gradient 
-        txw = tx.dot(w)
-        
-        #decide on loss at every iteration
-        loss = np.sum(np.square(txw-y))/n
-        #remove print later
-        print("Gradient Descent({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
-              bi=n_iter, ti=max_iter - 1, l=loss, w0=w[0], w1=w[1]))
+        gradient = compute_gradient(y_batch, tx_batch, w)
+        w = w-gamma * gradient
+    
+    loss = compute_mse_loss(y, tx, w)
     return loss, w
 
 def least_squares(y, tx):
+    """Calculate the loss and the w vector produced by the normal equations"""
     A = tx.T @ tx
     b = tx.T @ y 
     w = np.linalg.solve(A,b)
@@ -49,6 +39,7 @@ def least_squares(y, tx):
 
 
 def ridge_regression(y, tx, lambda_):
+    """Calculate the loss and the w vector produced by the normal equations for penalized least square"""
     A = tx.T @ tx + 2*lambda_*np.eye(tx.shape[1])
     b = tx.T @ y 
     w = np.linalg.solve(A,b)
@@ -56,10 +47,28 @@ def ridge_regression(y, tx, lambda_):
     loss = compute_mse_loss(y, tx, w)
     return loss, w
 
-def logistic_regression(y, tx, initial_w, max_iter, gamma):
+def logistic_regression(y, tx, initial_w, max_iters, gamma):
+    """Calculate the loss and the w vector produced by the logistic regression"""
+    w = initial_w
+    
+    for n_iter in range(max_iters): 
+        
+        gradient = logit_gradient(y, tx, w)
+        w = w - gamma*gradient 
+  
+    loss = logit_loss(y,tx,w)
     return loss, w
 
-def reg_logistic_regression(y, tx, lambda_, initial_w, max_iter, gamma):
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
+    """Calculate the loss and the w vector produced by the regularized logistic regression"""
+    w = initial_w
+    
+    for n_iter in range(max_iters): 
+        
+        gradient = logit_gradient(y, tx, w, lambda_)
+        w = w - gamma*gradient 
+  
+    loss = logit_loss(y,tx,w)
     return loss, w
 
 
