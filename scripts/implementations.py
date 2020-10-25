@@ -13,7 +13,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
         w = w - gamma*gradient 
   
     loss = compute_mse_loss(y,tx,w)
-    return loss, w
+    return w, loss
 
 
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
@@ -26,7 +26,7 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
         w = w-gamma * gradient
     
     loss = compute_mse_loss(y, tx, w)
-    return loss, w
+    return w, loss
 
 def least_squares(y, tx):
     """Calculate the loss and the w vector produced by the normal equations"""
@@ -35,7 +35,7 @@ def least_squares(y, tx):
     w = np.linalg.solve(A,b)
     
     loss = compute_mse_loss(y, tx, w)
-    return loss, w 
+    return w, loss 
 
 
 def ridge_regression(y, tx, lambda_):
@@ -45,7 +45,7 @@ def ridge_regression(y, tx, lambda_):
     w = np.linalg.solve(A,b)
     
     loss = compute_mse_loss(y, tx, w)
-    return loss, w
+    return w, loss
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """Calculate the loss and the w vector produced by the logistic regression"""
@@ -57,7 +57,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         w = w - gamma*gradient 
   
     loss = logit_loss(y,tx,w)
-    return loss, w
+    return w, loss
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Calculate the loss and the w vector produced by the regularized logistic regression"""
@@ -69,7 +69,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         w = w - gamma*gradient 
   
     loss = logit_loss(y,tx,w)
-    return loss, w
+    return w, loss
 
 
 #### Extended versions of regression algorithms
@@ -78,7 +78,7 @@ def logistic_gradient_descent(y, tx, w, max_iters, gamma, lambda_=0, eps=1e-4, w
     """logistic gradient descent. Additional provided arguments: eps (stopping value for the infinity norm) and w_start_OLS (starting can be OLS)"""
     if w_start_OLS:
         try:
-            loss, w = ridge_regression(y, tx, lambda_)
+            w, loss = ridge_regression(y, tx, lambda_)
         except:
             pass
         
@@ -102,7 +102,7 @@ def logistic_stochastic_gradient_descent(y, tx, w, max_iters, gamma, lambda_=0, 
     """logistic stochastic gradient descent."""
     if w_start_OLS:
         try:
-            loss, w = ridge_regression(y, tx, lambda_)
+            w, loss = ridge_regression(y, tx, lambda_)
         except:
             pass
         
@@ -125,7 +125,7 @@ def logistic_newton_descent(y, tx, w, max_iters, lambda_=0, eps=1e-4, w_start_OL
     """Newton descent."""
     if w_start_OLS:
         try:
-            loss, w = ridge_regression(y, tx, lambda_)
+            w, loss = ridge_regression(y, tx, lambda_)
         except:
             pass
 
