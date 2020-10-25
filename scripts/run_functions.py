@@ -43,6 +43,7 @@ def process_testdata(data, null_var_index, degree, train_mean, train_std, train_
     return data
 
 def predict(tx, w, thresh):
+    """Predict labels based on a specific threshold."""
     pred = sigmoid(tx@w)
     pred = (pred>thresh)*1
     pred[np.where(pred == 0)] = -1

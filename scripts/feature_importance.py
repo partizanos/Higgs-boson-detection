@@ -41,6 +41,7 @@ def skewness(x):
     return skew
 
 def significant_features(y, x, alpha=0.5):
+    """Returns 1 when a feature is significant at alpha and 0 otherwise."""
     output = list()
     for i in range(x.shape[1]):
         output.append(gaussian_test(y,x[:,i]))

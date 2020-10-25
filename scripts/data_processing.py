@@ -100,6 +100,7 @@ def trigonometric_augmentation(x, max_categories=10):
 
 
 def logabs1_augmentation(x, max_categories=10):
+    """log(abs(x)+1) augmentation for continuous variables."""
     # Identifying continuous and discrete features.
     cat_index = is_cat(x, max_categories)
     categorical_variables = x[:, cat_index]
@@ -114,6 +115,7 @@ def logabs1_augmentation(x, max_categories=10):
 
 
 def exp_augmentation(x, max_categories=10):
+    """exp(x) augmentation for continuous variables."""
     # Identifying continuous and discrete features.
     cat_index = is_cat(x, max_categories)
     categorical_variables = x[:, cat_index]
