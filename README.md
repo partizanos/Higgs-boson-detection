@@ -1,8 +1,10 @@
 # Higgs boson identification: Machine Learning Approach
 
 Python version: 3
-Libraries: - NumPy
-           - Matplotlib
+
+Libraries:
+* NumPy
+* Matplotlib
 
 In this repository one can find all the code written for the project as well as the paper which briefly explains our approach. 
 
