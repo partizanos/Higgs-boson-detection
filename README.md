@@ -1,11 +1,12 @@
 # Higgs boson identification: Machine Learning Approach
 
+Library used: NumPy
+
 In this repository one can find all the code written for the project as well as the paper which briefly explains our approach. 
 
 We provide the following notebooks which describe our full approach:
-* EDA & Data processing.ipynb - The notebook summurizes the exploratory data analysis and data processing done before training the model. We provide analysis for each of our 4 models.
-* Modeling.ipynb - In the following notebook we present the full deployment of our model, from hyperparameter tuning to cross validation. At the end the accuracy results on the test set are displayed. 
-* Plots.ipynb - The notebook shows the process of producing all of the graphs in our report. 
+* EDA & Feature importance.ipynb - The notebook summurizes the exploratory data analysis and feature importance analysis done before training any models.
+* Modeling.ipynb - In the following notebook we present the full deployment of our model, from hyperparameter tuning to cross validation. At the end the accuracy results on the train set are displayed. 
 
 The notebooks use several Python files, which contain the implementation of all algorithms and general functions used for the project.
 * data_processing.py - Contains all functions that are used within our data processing part of the code.
